@@ -11,6 +11,11 @@
 #ifndef JSON11_H_
 #define JSON11_H_
 
+#if defined(_MSC_VER)
+	#pragma warning( push )
+	#pragma warning( disable:4244 )	// Disables warning 'conversion from '*' to '**', possible loss of data'
+#endif
+
 #include <iostream>
 #include <vector>
 #include <map>
@@ -34,7 +39,7 @@ private:
         virtual Type type() const { return Type::JSNULL; }
         virtual void print(std::ostream& out) const { out << "null"; }
         virtual void traverse(void (*f)(const Node*)) const { f(this); }
-        virtual bool contains(const Node* that) const { return false; }
+        virtual bool contains(const Node* /*that*/) const { return false; }
         virtual bool operator == (const Node& that) const { return this == &that; }
         virtual bool is_schema() const { return false; }
         void unref();
@@ -49,7 +54,7 @@ private:
     };
     //
     struct Bool : Node {
-        Bool(bool x) { refcnt = 1; }
+        Bool(bool /*x*/) { refcnt = 1; }
         Type type() const override { return Type::BOOL; }
         void print(std::ostream& out) const override;
         static Bool T;
@@ -65,6 +70,9 @@ private:
         Number(long long x) { prec = DBL_DIG; value = x; }
         Number(long x) { prec = -1; value = x; }
         Number(int x) { prec = -1; value = x; }
+        Number(unsigned long long x) { prec = DBL_DIG; value = x; }
+        Number(unsigned long x) { prec = -1; value = x; }
+        Number(unsigned int x) { prec = -1; value = x; }
         Number(std::istream&);
         Type type() const override { return Type::NUMBER; }
         void print(std::ostream& out) const override;
@@ -162,22 +170,27 @@ private:
         Property(Node*, const std::string&);
         Property(Node*, int);
         operator Json() const { return target(); }
-        operator bool() { return target(); }
-        operator int() { return target(); }
-        operator long() { return target(); }
-        operator long long() { return target(); }
-        operator float() { return target(); }
-        operator double() { return target(); }
-        operator long double() { return target(); }
+        explicit operator bool() const { return static_cast< bool >( target() ); }
+        operator int() const { return target(); }
+        operator long() const { return target(); }
+        operator long long() const { return target(); }
+        operator unsigned int() const { return target(); }
+        operator unsigned long() const { return target(); }
+        operator unsigned long long() const { return target(); }
+        operator float() const { return target(); }
+        operator double() const { return target(); }
+        operator long double() const { return target(); }
         operator std::string() const { return target(); }
         Property operator [] (const std::string& k) { return target()[k]; }
         Property operator [] (const char* k) { return (*this)[std::string(k)]; }
         Property operator [] (int i) {return target()[i]; }
+        const Property operator [] (int i) const {return target()[i]; }
+
         Json operator = (const Json&);
         Json operator = (const Property&);
         bool operator == (const Json& js) const { return (Json)(*this) == js; }
         bool operator != (const Json& js) const { return !(*this == js); }
-        std::vector<std::string> keys() { return target().keys(); }
+        std::vector<std::string> keys() const { return target().keys(); }
         bool has(const std::string& key) const { return target().has(key); }
         friend std::ostream& operator << (std::ostream& out, const Property& p) {
             return out << (Json)p;
@@ -211,20 +224,26 @@ public:
     Json(int x) { (root = new Number(x))->refcnt++; }
     Json(long x) { (root = new Number(x))->refcnt++; }
     Json(long long x) { (root = new Number(x))->refcnt++; }
+    Json(unsigned int x) { (root = new Number(x))->refcnt++; }
+    Json(unsigned long x) { (root = new Number(x))->refcnt++; }
+    Json(unsigned long long x) { (root = new Number(x))->refcnt++; }
     Json(float x) { (root = new Number(x))->refcnt++; }
     Json(double x) { (root = new Number(x))->refcnt++; }
     Json(long double x) { (root = new Number(x))->refcnt++; }
-    Json(std::string& s) { (root = new String(s))->refcnt++; }
+    Json(const std::string& s) { (root = new String(s))->refcnt++; }
     Json(const char* s) { (root = new String(s))->refcnt++; }
     Json(std::initializer_list<Json>);
-    Json(const Property& p) { (root = p.target().root)->refcnt++; }
+    explicit Json(const Property& p) { (root = p.target().root)->refcnt++; }
     //
     // casts
     Type type() const { return root->type(); }
-    operator bool() const;
+    explicit operator bool() const;
     operator int() const;
     operator long() const;
     operator long long() const;
+    operator unsigned int() const;
+    operator unsigned long() const;
+    operator unsigned long long() const;
     operator float() const;
     operator double() const;
     operator long double() const;
@@ -234,7 +253,7 @@ public:
     Json& set(std::string key, const Json& val);
     Json get(const std::string& key) const;
     bool has(const std::string& key) const;
-    std::vector<std::string> keys();
+    std::vector<std::string> keys() const;
     //
     // array
     Json& operator << (const Json&);
@@ -243,14 +262,15 @@ public:
     Json& replace(int index, const Json&);
     //
     // subscript
-    size_t size() const;
+    int size() const;
     Json::Property operator [] (const std::string&);
     Json::Property operator [] (const char* k) { return (*this)[std::string(k)]; }
     Json::Property operator [] (int);
+    const Json::Property operator [] (int) const;
     //
     // stringify
-    std::string stringify() { return format(); }
-    std::string format();
+    std::string stringify() const { return format(); }
+    std::string format() const;
     friend std::ostream& operator << (std::ostream&, const Json&);
     friend std::istream& operator >> (std::istream&, Json&);
     //
@@ -282,5 +302,9 @@ public:
     static void test() { Node::test(); }
 #endif
 };
+
+#if defined(_MSC_VER)
+	#pragma warning( pop )
+#endif
 
 #endif /* JSON11_H_ */

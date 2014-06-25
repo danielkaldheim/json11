@@ -19,6 +19,11 @@
 
 using namespace std;
 
+#if defined(_MSC_VER)
+	#pragma warning( push )
+	#pragma warning( disable:4244 )	// Disables warning 'conversion from '*' to '**', possible loss of data'
+#endif
+
 #ifdef TEST
 
 vector<Json::Node*> Json::Node::nodes;
@@ -257,15 +262,22 @@ Json::Property Json::operator [] (int index) {
     return Property(mkarray(), index);
 }
 
+const Json::Property Json::operator [] (int index) const {
+    if (root->type() != Type::ARRAY)
+        throw use_error("method not applicable");
+
+	return Property((Array*)root, index);
+}
+
 Json::Property Json::operator [] (const string& key) {
     return Property(mkobject(), key);
 }
 
-size_t Json::size() const {
+int Json::size() const {
     if (root->type() == Type::ARRAY)
-        return ((Array*)root)->list.size();
+        return (int)((Array*)root)->list.size();
     if (root->type() == Type::OBJECT)
-        return ((Object*)root)->map.size();
+        return (int)((Object*)root)->map.size();
     throw use_error("method not applicable");
 }
 
@@ -309,7 +321,7 @@ Json Json::Property::target() const {
     throw logic_error("Property::operator Json()");
 }
 
-vector<string> Json::keys() {
+vector<string> Json::keys() const {
     if (root->type() != Type::OBJECT)
         throw use_error("method not applicable");
     Object* op = (Object*)root;
@@ -464,7 +476,7 @@ void Json::Array::add(Node* v) {
 void Json::Array::ins(int index, Node* v) {
     assert(v != nullptr);
     if (index < 0)
-        index += list.size();
+        index += (int)( list.size() );
     if (index < 0 || index > (int)list.size())
         throw out_of_range("index out of range");
     list.insert(list.begin() + index, v);
@@ -473,7 +485,7 @@ void Json::Array::ins(int index, Node* v) {
 
 void Json::Array::del(int index) {
     if (index < 0)
-        index += list.size();
+        index += (int)list.size();
     Node* v = list.at(index);
     v->unref();
     list.erase(list.begin() + index);
@@ -481,7 +493,7 @@ void Json::Array::del(int index) {
 
 void Json::Array::repl(int index, Node* v) {
     if (index < 0)
-        index += list.size();
+        index += (int)list.size();
     Node* u = list.at(index);
     u->unref();
     list[index] = v;
@@ -673,7 +685,7 @@ out:
     }
 }
 
-string Json::format() {
+string Json::format() const {
     ostringstream is("");
     is << *this;
     return is.str();
@@ -694,43 +706,80 @@ Json Json::parse(const string& str) {
 Json::operator std::string() const {
     if (root->type() == Type::STRING)
         return ((String*)root)->value;
+    if (root->type() == Type::NUMBER)
+        return std::to_string( ((Number*)root)->value );
     throw bad_cast();
 }
 
 Json::operator long double() const {
     if (root->type() == Type::NUMBER)
         return ((Number*)root)->value;
+    if (root->type() == Type::STRING)
+        return std::stold( ((String*)root)->value );
     throw bad_cast();
 }
 
 Json::operator double() const {
     if (root->type() == Type::NUMBER)
         return ((Number*)root)->value;
+    if (root->type() == Type::STRING)
+        return std::stod( ((String*)root)->value );
     throw bad_cast();
 }
 
 Json::operator float() const {
-    if (root->type() == Type::NUMBER) {
+    if (root->type() == Type::NUMBER)
         return ((Number*)root)->value;
-    }
+    if (root->type() == Type::STRING)
+        return std::stof( ((String*)root)->value );
     throw bad_cast();
 }
 
 Json::operator int() const {
     if (root->type() == Type::NUMBER)
         return ((Number*)root)->value;
+    if (root->type() == Type::STRING)
+        return std::stoi( ((String*)root)->value );
     throw bad_cast();
 }
 
 Json::operator long() const {
     if (root->type() == Type::NUMBER)
         return ((Number*)root)->value;
+    if (root->type() == Type::STRING)
+        return std::stol( ((String*)root)->value );
     throw bad_cast();
 }
 
 Json::operator long long() const {
     if (root->type() == Type::NUMBER)
         return ((Number*)root)->value;
+    if (root->type() == Type::STRING)
+        return std::stoll( ((String*)root)->value );
+    throw bad_cast();
+}
+
+Json::operator unsigned int() const {
+    if (root->type() == Type::NUMBER)
+        return ((Number*)root)->value;
+    if (root->type() == Type::STRING)
+        return std::stoul( ((String*)root)->value );
+    throw bad_cast();
+}
+
+Json::operator unsigned long() const {
+    if (root->type() == Type::NUMBER)
+        return ((Number*)root)->value;
+    if (root->type() == Type::STRING)
+        return std::stoul( ((String*)root)->value );
+    throw bad_cast();
+}
+
+Json::operator unsigned long long() const {
+    if (root->type() == Type::NUMBER)
+        return ((Number*)root)->value;
+    if (root->type() == Type::STRING)
+        return std::stoull( ((String*)root)->value );
     throw bad_cast();
 }
 
@@ -746,3 +795,6 @@ bool Json::operator == (const Json& that) const {
     return *root == *that.root;
 }
 
+#if defined(_MSC_VER)
+	#pragma warning( pop )
+#endif
