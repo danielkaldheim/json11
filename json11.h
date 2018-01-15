@@ -260,6 +260,7 @@ public:
     void insert(int index, const Json&);
     void erase(int index);
     Json& replace(int index, const Json&);
+    std::vector<Json> values() const;
     //
     // subscript
     int size() const;

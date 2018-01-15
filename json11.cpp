@@ -330,6 +330,16 @@ vector<string> Json::keys() const {
         ret.push_back(*it.first);
     return ret;
 }
+std::vector<Json> Json::values() const {
+    if (root->type() != Type::ARRAY)
+       throw use_error("method not applicable");
+    Array* op = (Array*)root;
+    vector<Json> ret;
+    for (auto it : op->list) {
+        ret.push_back(it);
+    }
+    return ret;
+}
 
 bool Json::String::operator == (const Node& that) const {
     return this == &that ||
