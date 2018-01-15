@@ -63,7 +63,7 @@ private:
     //
     struct Number : Node {
         long double value;
-        int prec;
+        long prec;
         Number(long double x) { prec = LDBL_DIG; value = x; }
         Number(double x) { prec = DBL_DIG; value = x; }
         Number(float x) { prec = FLT_DIG; value = x; }
@@ -291,7 +291,7 @@ public:
     static int indent;  // for pretty printing
     //
     struct parse_error : std::runtime_error {
-        unsigned line = 0, col = 0;
+        long line = 0, col = 0;
         parse_error(const char* msg, std::istream& in);
     };
     struct use_error : std::logic_error {

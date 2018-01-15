@@ -48,14 +48,14 @@ set<string> Json::keyset;
 int Json::indent;
 int Json::level;
 
-static unsigned currpos(istream& in, unsigned* pos) {
-    unsigned curr = in.tellg();
+static long currpos(istream& in, long* pos) {
+    long curr = in.tellg();
     if (pos != nullptr)
         *pos = 0;
     in.seekg(0);   // rewind
     if (in.bad())
         return 0;
-    unsigned count = 0, line = 1, col = 1;
+    long count = 0, line = 1, col = 1;
     while (!in.eof() && !in.fail() && ++count < curr) {
         if (in.get() == '\n') {
             ++line;
@@ -131,7 +131,7 @@ bool Json::Number::operator == (const Node& that) const {
     if (fabs(value) < LDBL_EPSILON)
         return fabs(numb.value) < LDBL_EPSILON;
     long double delta = fabs((value - numb.value)/value);
-    int digs = max(prec, numb.prec);
+    long digs = max(prec, numb.prec);
     return delta < pow(10, -digs);
 }
 
@@ -342,7 +342,7 @@ void Json::Bool::print(ostream& out) const {
 
 void Json::Number::print(ostream& out) const {
     if (prec >= 0)
-        out << setprecision(prec);
+        out << setprecision(static_cast<int>(prec));
     out << value;
 }
 
@@ -762,8 +762,8 @@ Json::operator long long() const {
 Json::operator unsigned int() const {
     if (root->type() == Type::NUMBER)
         return ((Number*)root)->value;
-    if (root->type() == Type::STRING)
-        return std::stoul( ((String*)root)->value );
+//    if (root->type() == Type::STRING)
+//        return std::stoul( ((String*)root)->value );
     throw bad_cast();
 }
 
